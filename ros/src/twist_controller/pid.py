@@ -1,3 +1,6 @@
+"""
+A generic PID controller that can be used in twist_controller.py.
+"""
 
 MIN_NUM = float('-inf')
 MAX_NUM = float('inf')

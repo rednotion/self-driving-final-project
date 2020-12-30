@@ -1,3 +1,6 @@
+"""
+A generic low pass filter that can be used in twist_controller.py.
+"""
 
 class LowPassFilter(object):
     def __init__(self, tau, ts):

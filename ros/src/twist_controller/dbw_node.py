@@ -54,9 +54,14 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        self.controller = Controller()
 
         # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber('/twist_cmd', None, self.twist_cmd_cb)
+        rospy.Subscriber('/current_velocity', None, self.current_velocity_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', None, self.dbw_enabled_cb)
+        
+        self.dbw_enabled = False
 
         self.loop()
 

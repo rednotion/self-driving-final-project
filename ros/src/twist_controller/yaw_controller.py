@@ -1,3 +1,7 @@
+"""
+A controller that can be used to convert target linear and angular velocity to steering commands.
+"""
+
 from math import atan
 
 class YawController(object):
