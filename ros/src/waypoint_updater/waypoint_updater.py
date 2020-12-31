@@ -33,6 +33,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        # rospy.Subscriber('/obstacle_waypoint', None, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -77,10 +79,45 @@ class WaypointUpdater(object):
         return closest_idx  
     
     def publish_waypoints(self, closest_waypoint_idx):
+        final_lane = self.generate_lane(closest_waypoint_idx)
+        self.final_waypoints_pub.publish(lane)
+    
+    def generate_lane(self, closest_waypoint_idx):
         lane = Lane()
         lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
-        self.final_waypoints_pub.publish(lane)
+        lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx : closest_waypoint_idx + LOOKAHEAD_WPS]
+        
+        # once you have traffic light
+        # lane = Lane()
+        # closest_idx = self.get_closest_waypoint_idx()
+        # farthest_idx = closest_idx + LOOKAHEAD_WPS
+        # base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        # if self.stopline_wp_idx == -1 o (self.stopline_wp_idx >= farthest_idx):
+        #   lane.waypoints = base_waypoints
+        # else:
+        #   lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
+        
+        return lane
+    
+    def decelerate_waypoints(self, waypoints, closest_idx):
+        tmp = []
+        for i, wp in enumerate(waypoints):
+            p = Waypoint()
+            p.pose = wp.pose
+            
+            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
+            # minus 2 so the nose of the car stops before the line
+            # if you don't minus 2, the middle of the car will be at the stopline 
+            dist = self.distance(waypoints, i, stop_idx)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
+            #### can do constant decel or a smooth s curve b/c root tends to be very sharp at the end
+            if vel < 1.:
+                vel = 0.
+            
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            tmp.append(p)
+            
+       return tmp
     
     def pose_cb(self, msg):
         # TODO: Implement
@@ -99,7 +136,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -112,6 +149,7 @@ class WaypointUpdater(object):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def distance(self, waypoints, wp1, wp2):
+        """Linear piecewise distance"""
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
