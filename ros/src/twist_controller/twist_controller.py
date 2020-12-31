@@ -67,9 +67,12 @@ class Controller(object):
         brake = 0
         
         if linear_vel == 0 and current_vel < 0.1:
+            # if target lin vel is 0 and current vel is also very slow, we are trying to stop
             throttle = 0
             brake = 700 
         elif throttle < 0.1 and vel_error < 0:
+            # if vel_error < 0 then we are currently going faster than we want to be
+            # thus we need to slow down. shut throttle to 0 and implement brakes
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel) * self.vehicle_mass * self.wheel_radius # torque N*m
