@@ -24,7 +24,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+MAX_DECEL = 0.1
 
 
 class WaypointUpdater(object):
@@ -45,13 +46,13 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_tree = None
 
-        self.loop() # rospy.spin()
-        
+        self.loop()  # rospy.spin()
+
     def loop(self):
         # instead of using rospy.spin()
         rate = rospy.Rate(50)  # gives us control over the publishing frequency
         while not rospy.is_shutdown():
-            if self.pose and self.base_waypoints: 
+            if self.pose and self.base_waypoints:
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
                 self.publish_waypoints(closest_waypoint_idx)
             rate.sleep()
@@ -59,35 +60,35 @@ class WaypointUpdater(object):
     def get_closest_waypoint_idx(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
-        closest_idx = self.waypoint_tree.query([x,y], 1)[1]
-        
+        closest_idx = self.waypoint_tree.query([x, y], 1)[1]
+
         # check for the case whether its ahead or behind vehicle
         closest_coord = self.waypoints_2d[closest_idx]
-        prev_coord = self.waypoints_2d[closest_idx-1]
-        
+        prev_coord = self.waypoints_2d[closest_idx - 1]
+
         # hyperplane through these 2 indexes
         # (they are actually vectors, so we find a plane)
         cl_vect = np.array(closest_coord)
         prev_vect = np.array(prev_coord)
         pos_vect = np.array([x, y])
-        
-        val = np.dot(cl_vect-prev_vect, pos_vect-cl_vect)
+
+        val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect)
         # val > 0 if the two planes are moving in the same direction == car is ahead of closest_idx
         # val < 0 if the two planes are moving in diff direction == car is behind closest_idx (desired)
         if val > 0:
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
-        
-        return closest_idx  
-    
+
+        return closest_idx
+
     def publish_waypoints(self, closest_waypoint_idx):
         final_lane = self.generate_lane(closest_waypoint_idx)
-        self.final_waypoints_pub.publish(lane)
-    
+        self.final_waypoints_pub.publish(final_lane)
+
     def generate_lane(self, closest_waypoint_idx):
         lane = Lane()
         lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx : closest_waypoint_idx + LOOKAHEAD_WPS]
-        
+        lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx: closest_waypoint_idx + LOOKAHEAD_WPS]
+
         # once you have traffic light
         # lane = Lane()
         # closest_idx = self.get_closest_waypoint_idx()
@@ -97,29 +98,29 @@ class WaypointUpdater(object):
         #   lane.waypoints = base_waypoints
         # else:
         #   lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
-        
+
         return lane
-    
+
     def decelerate_waypoints(self, waypoints, closest_idx):
         tmp = []
         for i, wp in enumerate(waypoints):
             p = Waypoint()
             p.pose = wp.pose
-            
+
             stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
             # minus 2 so the nose of the car stops before the line
-            # if you don't minus 2, the middle of the car will be at the stopline 
+            # if you don't minus 2, the middle of the car will be at the stopline
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
             #### can do constant decel or a smooth s curve b/c root tends to be very sharp at the end
             if vel < 1.:
                 vel = 0.
-            
+
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             tmp.append(p)
-            
+
         return tmp
-    
+
     def pose_cb(self, msg):
         # TODO: Implement
         self.pose = msg
@@ -152,8 +153,8 @@ class WaypointUpdater(object):
     def distance(self, waypoints, wp1, wp2):
         """Linear piecewise distance"""
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
+        dl = lambda a, b: math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
+        for i in range(wp1, wp2 + 1):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
