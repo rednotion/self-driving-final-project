@@ -14,6 +14,7 @@ import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
+
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
@@ -122,16 +123,16 @@ class TLDetector(object):
 
         """
         # For testing, you can just return light state
-        # return light.state
-        
-#         if not self.has_image:
-#             self.prev_light_loc = None
-#             return False
+        return light.state
 
-#         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        # if not self.has_image:
+        #     self.prev_light_loc = None  # ????
+        #     return TrafficLight.UNKNOWN  # False
 
-#         #Get classification
-#         return self.light_classifier.get_classification(cv_image)
+        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+        # #Get classification
+        # return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -154,7 +155,7 @@ class TLDetector(object):
             diff = len(self.waypoints.waypoints)  # calculate the diff in terms of waypoint indexes
             for i, l in enumerate(self.lights):
                 stop_line = stop_line_positions[i]
-                tmp_wp_idx = self.get_closest_waypoint(l.pose.pose.position.x, l.pose.pose.position.y)
+                tmp_wp_idx = self.get_closest_waypoint(stop_line.pose.pose.position.x, stop_line.pose.pose.position.y)
                 d = tmp_wp_idx - car_wp_idx
                 if d >= 0 & d < diff:
                     diff = d
@@ -164,8 +165,9 @@ class TLDetector(object):
         if closest_light:
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
-        
+
         return -1, TrafficLight.UNKNOWN
+
 
 if __name__ == '__main__':
     try:
