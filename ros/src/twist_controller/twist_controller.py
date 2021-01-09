@@ -53,8 +53,8 @@ class Controller(object):
 
         # convert from the Vector3 to a number
         current_vel = self.vel_lpf.filt(current_vel)
-        target_linear_vel = self.vel_lpf.filter(linear_vel)
-        target_angular_vel = self.vel_lpf.filter(angular_vel)
+        target_linear_vel = self.vel_lpf.filt(linear_vel)
+        target_angular_vel = self.vel_lpf.filt(angular_vel)
 
         # debug
         rospy.logwarn("Curent vel: {0}".format(current_vel))
