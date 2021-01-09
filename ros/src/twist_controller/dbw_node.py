@@ -68,21 +68,32 @@ class DBWNode(object):
                                     max_steer_angle=max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
-        rospy.Subscriber('/twist_cmd', None, self.twist_cmd_cb)
-        rospy.Subscriber('/current_velocity', None, self.current_velocity_cb) # in m/s
-        rospy.Subscriber('/vehicle/dbw_enabled', None, self.dbw_enabled_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb) # in m/s
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         
         # Properties
         self.dbw_enabled = None
-        self.curr_ang_vel = None
-        self.current_vel = None
-        self.linear_vel = None
-        self.angular_vel = None
+        self.current_vel = None # current
+        self.curr_ang_vel = None # current
+        self.linear_vel = None # target
+        self.angular_vel = None # target
         self.throttle = 0
         self.steering = 0
         self.brake = 0
 
         self.loop()
+        
+    def twist_cmd_cb(self, msg):
+        self.linear_vel = msg.twist.linear
+        self.angular_vel = msg.twist.angular
+    
+    def current_velocity_cb(self, msg):
+        self.current_vel = msg.twist.linear
+        self.current_ang_vel = msg.twist.angular
+    
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg.data
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz: should be kept to this

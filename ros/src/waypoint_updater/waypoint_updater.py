@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
@@ -66,7 +67,7 @@ class WaypointUpdater(object):
         
         # hyperplane through these 2 indexes
         # (they are actually vectors, so we find a plane)
-        cl-vect = np.array(closest_coord)
+        cl_vect = np.array(closest_coord)
         prev_vect = np.array(prev_coord)
         pos_vect = np.array([x, y])
         
@@ -117,7 +118,7 @@ class WaypointUpdater(object):
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             tmp.append(p)
             
-       return tmp
+        return tmp
     
     def pose_cb(self, msg):
         # TODO: Implement

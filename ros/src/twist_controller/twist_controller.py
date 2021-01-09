@@ -1,3 +1,4 @@
+import rospy
 from yaw_controller import YawController
 from pid import PID
 from lowpass import LowPassFilter
@@ -16,7 +17,7 @@ class Controller(object):
                 wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle):
         
         # yaw
-        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed,
+        self.yaw_controller = YawController(wheel_base, steer_ratio, ONE_MPH,
                                             max_lat_accel, max_steer_angle)
         
         # pid/throttle
