@@ -86,12 +86,14 @@ class DBWNode(object):
         self.loop()
 
     def twist_cmd_cb(self, msg):
-        self.target_linear_vel = msg.twist.linear
-        self.target_angular_vel = msg.twist.angular
+        # Note that the coordinates for linear velocity are vehicle-centered
+        # so only the x-direction linear velocity should be nonzero.
+        self.target_linear_vel = msg.twist.linear.x
+        self.target_angular_vel = msg.twist.angular.x
 
     def current_velocity_cb(self, msg):
-        self.current_linear_vel = msg.twist.linear
-        self.current_angular_vel = msg.twist.angular
+        self.current_linear_vel = msg.twist.linear.x
+        self.current_angular_vel = msg.twist.angular.x
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
