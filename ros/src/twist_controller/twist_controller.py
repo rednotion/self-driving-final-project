@@ -54,12 +54,12 @@ class Controller(object):
         # convert from the Vector3 to a number
         current_vel = self.vel_lpf.filt(current_vel)
         rospy.logwarn("Curent vel: {0}".format(current_vel))
-        target_linear_vel = self.vel_lpf.filt(linear_vel)
-        rospy.logwarn("Target Linear vel: {0}".format(target_linear_vel))
-        target_angular_vel = self.vel_lpf.filt(angular_vel)
-        rospy.logwarn("Target Angular vel: {0}".format(target_angular_vel))
+        #target_linear_vel = self.vel_lpf.filt(linear_vel)
+        rospy.logwarn("Target Linear vel: {0}".format(linear_vel))
+        #target_angular_vel = self.vel_lpf.filt(angular_vel)
+        rospy.logwarn("Target Angular vel: {0}".format(angular_vel))
 
-        steering = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_vel)
+        steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
 
         vel_error = linear_vel - current_vel
         self.last_vel = current_vel
