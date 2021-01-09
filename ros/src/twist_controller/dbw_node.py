@@ -76,7 +76,6 @@ class DBWNode(object):
         # Properties
         self.dbw_enabled = None
         self.current_linear_vel = None  # current
-        self.current_angular_vel = None  # current
         self.target_linear_vel = None  # target
         self.target_angular_vel = None  # target
         self.throttle = 0
@@ -89,11 +88,11 @@ class DBWNode(object):
         # Note that the coordinates for linear velocity are vehicle-centered
         # so only the x-direction linear velocity should be nonzero.
         self.target_linear_vel = msg.twist.linear.x
-        self.target_angular_vel = msg.twist.angular.x
+        # angular should be z-axis
+        self.target_angular_vel = msg.twist.angular.z
 
     def current_velocity_cb(self, msg):
         self.current_linear_vel = msg.twist.linear.x
-        self.current_angular_vel = msg.twist.angular.x
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
