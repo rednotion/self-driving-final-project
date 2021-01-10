@@ -51,11 +51,11 @@ class WaypointUpdater(object):
 
     def loop(self):
         # instead of using rospy.spin()
-        rate = rospy.Rate(100)  # 50 # gives us control over the publishing frequency
+        rate = rospy.Rate(50)  # gives us control over the publishing frequency
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
-                rospy.logwarn("Closest waypoint index: {0}".format(closest_waypoint_idx))
+                # rospy.logwarn("Closest waypoint index: {0}".format(closest_waypoint_idx))
                 self.publish_waypoints(closest_waypoint_idx)
             rate.sleep()
 
