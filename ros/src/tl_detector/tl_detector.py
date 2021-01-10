@@ -35,7 +35,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb) # image_raw alternatively
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)  # image_raw alternatively
 
         # permanent (x, y) coordinates for each traffic light's stop line are provided by the config dictionary
         config_string = rospy.get_param("/traffic_light_config")
@@ -148,10 +148,10 @@ class TLDetector(object):
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
+        if self.pose:
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
 
-            #TODO find the closest visible traffic light (if one exists)
+            # TODO find the closest visible traffic light (if one exists)
             diff = len(self.waypoints.waypoints)  # calculate the diff in terms of waypoint indexes
             for i, l in enumerate(self.lights):
                 stop_line = stop_line_positions[i]
@@ -164,6 +164,7 @@ class TLDetector(object):
 
         if closest_light:
             state = self.get_light_state(closest_light)
+            rospy.logwarn("closest light found at wp.{} with state {}".format(line_wp_idx, state))
             return line_wp_idx, state
 
         return -1, TrafficLight.UNKNOWN
