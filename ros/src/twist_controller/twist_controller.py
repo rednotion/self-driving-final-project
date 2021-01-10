@@ -59,7 +59,6 @@ class Controller(object):
         # rospy.logwarn("Target Angular vel: {0}".format(angular_vel))
 
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
-        rospy.logwarn("steering: {0}".format(steering))
 
         vel_error = linear_vel - current_vel
         self.last_vel = current_vel
