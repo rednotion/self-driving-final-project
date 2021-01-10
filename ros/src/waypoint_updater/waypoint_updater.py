@@ -50,10 +50,11 @@ class WaypointUpdater(object):
 
     def loop(self):
         # instead of using rospy.spin()
-        rate = rospy.Rate(50)  # gives us control over the publishing frequency
+        rate = rospy.Rate(100)  # 50 # gives us control over the publishing frequency
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
+                rospy.logwarn("Closest waypoint index: {0}".format(closest_waypoint_idx))
                 self.publish_waypoints(closest_waypoint_idx)
             rate.sleep()
 
@@ -85,19 +86,19 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self, closest_waypoint_idx):
-        lane = Lane()
-        lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx: closest_waypoint_idx + LOOKAHEAD_WPS]
+        # lane = Lane()
+        # lane.header = self.base_waypoints.header
+        # lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx: closest_waypoint_idx + LOOKAHEAD_WPS]
 
         # once you have traffic light
-        # lane = Lane()
-        # closest_idx = self.get_closest_waypoint_idx()
-        # farthest_idx = closest_idx + LOOKAHEAD_WPS
-        # base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
-        # if self.stopline_wp_idx == -1 o (self.stopline_wp_idx >= farthest_idx):
-        #   lane.waypoints = base_waypoints
-        # else:
-        #   lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
+        lane = Lane()
+        closest_idx = self.get_closest_waypoint_idx()
+        farthest_idx = closest_idx + LOOKAHEAD_WPS
+        base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        if self.stopline_wp_idx == -1 o (self.stopline_wp_idx >= farthest_idx):
+          lane.waypoints = base_waypoints
+        else:
+          lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
         return lane
 
