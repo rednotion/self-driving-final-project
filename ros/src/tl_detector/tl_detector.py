@@ -11,6 +11,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -40,6 +41,7 @@ class TLDetector(object):
         # permanent (x, y) coordinates for each traffic light's stop line are provided by the config dictionary
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
+        rospy.logwarn(self.config["stop_line_positions"])
 
         # publish the index of the waypoint for nearest upcoming red light's stop line
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -56,7 +58,7 @@ class TLDetector(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        rospy.logwarn("current pose")
+        ## rospy.logwarn("current pose")
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
@@ -66,7 +68,7 @@ class TLDetector(object):
         self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
-        rospy.logwarn("getting traffic data")
+        ## rospy.logwarn("getting traffic data")
         self.lights = msg.lights
 
     def image_cb(self, msg):
@@ -77,7 +79,7 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        rospy.logwarn("getting image data")
+        ## rospy.logwarn("getting image data")
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -113,6 +115,23 @@ class TLDetector(object):
         """
         #TODO implement
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
+
+        # check for the case whether its ahead or behind vehicle
+        closest_coord = self.waypoints_2d[closest_idx]
+        prev_coord = self.waypoints_2d[closest_idx - 1]
+
+        # hyperplane through these 2 indexes
+        # (they are actually vectors, so we find a plane)
+        cl_vect = np.array(closest_coord)
+        prev_vect = np.array(prev_coord)
+        pos_vect = np.array([x, y])
+
+        val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect)
+        # val > 0 if the two planes are moving in the same direction == car is ahead of closest_idx
+        # val < 0 if the two planes are moving in diff direction == car is behind closest_idx (desired)
+        if val > 0:
+            closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+
         return closest_idx
 
     def get_light_state(self, light):
@@ -158,16 +177,18 @@ class TLDetector(object):
             diff = len(self.waypoints.waypoints)  # calculate the diff in terms of waypoint indexes
             for i, l in enumerate(self.lights):
                 stop_line = stop_line_positions[i]
-                tmp_wp_idx = self.get_closest_waypoint(stop_line.pose.pose.position.x, stop_line.pose.pose.position.y)
+                tmp_wp_idx = self.get_closest_waypoint(stop_line[0], stop_line[1]) 
                 d = tmp_wp_idx - car_wp_idx
-                if d >= 0 & d < diff:
+                ## rospy.logwarn("for light {} at wp {}, the diff in distance is {}".format(str(i), str(tmp_wp_idx), str(d)))
+                if (d >= 0) & (d < diff):
                     diff = d
                     closest_light = l
                     line_wp_idx = tmp_wp_idx
+                    rospy.logwarn("..resetting nearest light to light {} at wp {} with diff {}".format(str(i), str(line_wp_idx), str(diff)))
 
         if closest_light:
             state = self.get_light_state(closest_light)
-            rospy.logwarn("closest light found at wp.{} with state {}".format(line_wp_idx, state))
+            rospy.logwarn("closest light from {}: at waypoint {} and state {}".format(str(car_wp_idx), str(line_wp_idx), str(state)))
             return line_wp_idx, state
 
         return -1, TrafficLight.UNKNOWN
