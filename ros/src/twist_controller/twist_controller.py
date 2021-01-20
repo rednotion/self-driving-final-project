@@ -4,7 +4,7 @@ from pid import PID
 from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
-ONE_MPH = 0.44704
+ONE_MPH = 0.44704 # in km
 
 
 """
@@ -51,32 +51,31 @@ class Controller(object):
             self.throttle_controller.reset()
             return 0., 0., 0.
 
-        # convert from the Vector3 to a number
         current_vel = self.vel_lpf.filt(current_vel)
-
-        # rospy.logwarn("Curent vel: {0}".format(current_vel))
-        # rospy.logwarn("Target Linear vel: {0}".format(linear_vel))
-        # rospy.logwarn("Target Angular vel: {0}".format(angular_vel))
-
+        
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
-
+        
         vel_error = linear_vel - current_vel
         self.last_vel = current_vel
+        rospy.logwarn("target = {}, current = {}, error = {}".format(str(linear_vel), str(current_vel), str(vel_error)))
 
         current_time = rospy.get_time()
         sample_time = current_time - self.last_time
         self.last_time = current_time
 
         throttle = self.throttle_controller.step(vel_error, sample_time)
+        # rospy.logwarn("throttle = {}".format(str(throttle)))
         brake = 0
 
-        if linear_vel == 0 and current_vel < 0.1:
+        if (linear_vel == 0) and (current_vel < 0.1):
             # if target lin vel is 0 and current vel is also very slow, we are trying to stop
+            rospy.logwarn("we are so slow im going to stop")
             throttle = 0
             brake = 700
-        elif throttle < 0.1 and vel_error < 0:
+        elif (throttle < 0.1) and (vel_error < 0):
             # if vel_error < 0 then we are currently going faster than we want to be
             # thus we need to slow down. shut throttle to 0 and implement brakes
+            rospy.logwarn("we are too fast so slow down")
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel) * self.vehicle_mass * self.wheel_radius  # torque N*m

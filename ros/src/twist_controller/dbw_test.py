@@ -45,6 +45,8 @@ class DBWTestNode(object):
         self.brake_data = []
 
         self.dbw_enabled = False
+        
+        rospy.logwarn("initialized")
 
         base_path = os.path.dirname(os.path.abspath(__file__))
         self.steerfile = os.path.join(base_path, 'steers.csv')

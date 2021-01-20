@@ -25,7 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 50  # Number of waypoints we will publish. You can change this number
-MAX_DECEL = 0.1
+MAX_DECEL = 1.0
 
 
 class WaypointUpdater(object):
@@ -47,11 +47,10 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
 
-        self.loop()  # rospy.spin()
+        self.loop()
 
     def loop(self):
-        # instead of using rospy.spin()
-        rate = rospy.Rate(50)  # gives us control over the publishing frequency
+        rate = rospy.Rate(50)  # gives us control over the publishing frequency compared to rospy.spin()
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
@@ -86,17 +85,16 @@ class WaypointUpdater(object):
         final_lane = self.generate_lane(closest_waypoint_idx)
         self.final_waypoints_pub.publish(final_lane)
 
-    def generate_lane(self, closest_waypoint_idx):
-        # lane = Lane()
-        # lane.header = self.base_waypoints.header
-        # lane.waypoints = self.base_waypoints.waypoints[closest_waypoint_idx: closest_waypoint_idx + LOOKAHEAD_WPS]
-
-        # once you have traffic light
+    def generate_lane(self, closest_idx):
         lane = Lane()
-        closest_idx = self.get_closest_waypoint_idx()
+        lane.header = self.base_waypoints.header
+        
+        # get waypoints
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
         ## rospy.logwarn("farthest planned index = {} and traffic idx = {}".format(str(farthest_idx), str(self.stopline_wp_idx)))
+        # case 1: stopline_wp_idx == -1 : no red light detected that we need to stop at
+        # case 2: if stopline is further than our waypoint lookahead, don't bother
         if (self.stopline_wp_idx == -1) or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = base_waypoints
         else:
@@ -116,10 +114,10 @@ class WaypointUpdater(object):
             # if you don't minus 2, the middle of the car will be at the stopline
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
-            #### can do constant decel or a smooth s curve b/c root tends to be very sharp at the end
             if vel < 1.:
                 vel = 0.
-
+            # Ideas for improvement
+            # can do constant decel or a smooth s curve b/c root tends to be very sharp at the end
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             tmp.append(p)
 
@@ -138,13 +136,12 @@ class WaypointUpdater(object):
             # We use the KDTree to enable quick search later on, so we can just subset all the points that are
             # ahead of our car's current position
             self.waypoint_tree = KDTree(self.waypoints_2d)
-        pass
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         self.stopline_wp_idx = msg.data
-        if self.stopline_wp_idx != -1:
-            rospy.logwarn("Detected upcoming red light stopline index at {}".format(str(self.stopline_wp_idx)))
+#         if self.stopline_wp_idx != -1:
+#             rospy.logwarn("Detected upcoming red light stopline at waypoint {}".format(str(self.stopline_wp_idx)))
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
